@@ -1,0 +1,25 @@
+{
+  "identifier": "org.ursamaris.nova.marked2",
+  "name": "Marked 2",
+  "organization": "John Fieber",
+  "description": "View Markdown files with Marked 2.",
+  "version": "1.0",
+  "categories": ["commands"],
+  "repository": "https://github.com/jfieber/Marked.novaextension",
+  "bugs": "https://github.com/jfieber/Marked.novaextension/issues",
+  "license": "MIT",
+  "main": "main.js",
+  "activationEvents": ["onLanguage:markdown"],
+  "entitlements": {
+    "process": true
+  },
+  "commands": {
+    "editor": [
+      {
+        "title": "View in Marked 2",
+        "command": "marked.runMarked2",
+        "when": "editorHasFocus && documentHasPath && editorSyntax == 'markdown'"
+      }
+    ]
+  }
+}
