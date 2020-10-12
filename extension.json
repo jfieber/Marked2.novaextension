@@ -3,7 +3,7 @@
   "name": "Marked 2",
   "organization": "John Fieber",
   "description": "View Markdown files with Marked 2.",
-  "version": "1.0",
+  "version": "1.0.1",
   "categories": ["commands"],
   "repository": "https://github.com/jfieber/Marked.novaextension",
   "bugs": "https://github.com/jfieber/Marked.novaextension/issues",
