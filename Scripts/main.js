@@ -24,6 +24,62 @@ nova.commands.register("marked.runMarked2", (editor) => {
     });
 });
 
+var streaming = null;
+nova.commands.register("marked.streamMarked2", (editor) => {
+  if (streaming !== null && Disposable.isDisposable(streaming)) {
+    console.info("Streaming preview OFF");
+    streaming.dispose();
+    streaming = null;
+  } else {
+    console.info("Streaming preview ON");
+    liveRefresh(editor);
+    streaming = editor.onDidStopChanging((editor) => {
+      liveRefresh(editor);
+    });
+  }
+});
+
+function liveRefresh(editor) {
+  var options = {
+    args: ["mkstream", "-a", "Nova.app"],
+    stdio: "pipe",
+  };
+
+  const docPath = editor.document.path;
+  if (docPath != undefined && docPath != null) {
+    options.args = options.args.concat("-p", docPath);
+  }
+
+  var mkstream = new Process("/usr/bin/env", options);
+
+  mkstream.onStdout((l) => {
+    console.log(`mkstream stdout: ${l.trim()}`);
+  });
+  mkstream.onStderr((l) => {
+    console.log(`mkstream stderr: ${l.trim()}`);
+  });
+  mkstream.onDidExit((status) => {
+    if (status != 0) {
+      console.log(`mkstream exit: ${status}`);
+    }
+  });
+
+  mkstream.start();
+
+  const txt = editor.document.getTextInRange(
+    new Range(0, editor.document.length)
+  );
+  const writer = mkstream.stdin.getWriter();
+  writer
+    .write(txt)
+    .then(() => {
+      writer.close();
+    })
+    .catch(() => {
+      console.log("failed to update Marked");
+    });
+}
+
 //
 // Work out the path to Marked 2.
 //
