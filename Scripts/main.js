@@ -41,7 +41,7 @@ nova.commands.register("marked.streamMarked2", (editor) => {
 
 function liveRefresh(editor) {
   var options = {
-    args: ["mkstream", "-a", "Nova.app"],
+    args: ["-a", "Nova.app"],
     stdio: "pipe",
   };
 
@@ -50,7 +50,10 @@ function liveRefresh(editor) {
     options.args = options.args.concat("-p", docPath);
   }
 
-  var mkstream = new Process("/usr/bin/env", options);
+  var mkstream = new Process(
+    nova.path.join(nova.extension.path, "bin", "mkstream"),
+    options
+  );
 
   mkstream.onStdout((l) => {
     console.log(`mkstream stdout: ${l.trim()}`);
