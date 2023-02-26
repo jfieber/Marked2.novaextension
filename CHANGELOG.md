@@ -17,3 +17,7 @@ Add a preferences item to set the path to the Marked 2 application. If the prefe
 ## Version 1.1.0
 
 Icon update
+
+## Version 1.1.1
+
+Fix a first-run bug where path to Marked is unset.

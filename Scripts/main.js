@@ -31,9 +31,11 @@ function resolveMarkedPath() {
   return new Promise((resolve, reject) => {
     // If the existing config for the path seems good, go with it.
     let mk2 = nova.config.get(markedPathPref, "string");
-    mk2stat = nova.fs.stat(mk2);
-    if (mk2stat !== null && mk2stat !== undefined && mk2stat.isDirectory()) {
-      return resolve(mk2);
+    if (mk2 !== null) {
+      mk2stat = nova.fs.stat(mk2);
+      if (mk2stat !== null && mk2stat !== undefined && mk2stat.isDirectory()) {
+        return resolve(mk2);
+      }
     }
 
     // No? Then scoop up anything with a marked bundle ID and then
