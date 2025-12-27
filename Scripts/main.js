@@ -1,9 +1,23 @@
 const markedPathPref = "org.ursamaris.nova.marked2.markedPath";
+const markedBundleID = "com.brettterpstra.marked*";
+const markedBundleIDSetapp = "com.brettterpstra.marked-setapp";
 
-// Verify the path to Marked 2.
-resolveMarkedPath();
+let State = {
+  trash: new CompositeDisposable(),
+  markedPath: null
+};
 
-nova.commands.register("marked.runMarked2", (editor) => {
+exports.activate = function() {
+  State.trash.add(nova.commands.register("marked.runMarked", commandRunMarked));
+  State.trash.add(nova.config.onDidChange(markedPathPref, configPathChanged));
+};
+
+exports.deactivate = function() {
+  State.trash.dispose();
+};
+
+// Open In Marked editor command
+function commandRunMarked(editor) {
   resolveMarkedPath()
     .then((markedPath) => {
       return novaExec("/usr/bin/open", {
@@ -16,31 +30,69 @@ nova.commands.register("marked.runMarked2", (editor) => {
         nova.workspace.showInformativeMessage(err);
       } else {
         nova.workspace.showInformativeMessage(
-          nova.localize("Error Launching Marked 2") +
+          nova.localize("Error Launching Marked") +
             ":\n\n" +
             execErrorMessage(err)
         );
       }
     });
-});
+}
+
+// Reset the saved path to marked on config change.
+function configPathChanged(a, b) {
+  if (a != b) {
+    if (State.markedPath !== null) {
+      State.markedPath = null;
+    }
+  }
+}
+
+// Check the specified path to Marked is valid.
+// Returns the path if valid or null if not.
+function validateMarkedPath(markedPath) {
+  if (markedPath !== null) {
+    mkStat = nova.fs.stat(markedPath);
+    if (mkStat !== null && mkStat !== undefined && mkStat.isDirectory()) {
+      return markedPath;
+    }
+  }
+  return null;
+}
+
 
 //
-// Work out the path to Marked 2.
+// Work out the path to Marked.
 //
 function resolveMarkedPath() {
   return new Promise((resolve, reject) => {
     // If the existing config for the path seems good, go with it.
-    let mk2 = nova.config.get(markedPathPref, "string");
-    if (mk2 !== null) {
-      mk2stat = nova.fs.stat(mk2);
-      if (mk2stat !== null && mk2stat !== undefined && mk2stat.isDirectory()) {
-        return resolve(mk2);
+    let configPath = nova.config.get(markedPathPref, "string");
+    if (validateMarkedPath(configPath) !== null) {
+      State.markedPath = configPath;
+      console.info(`using preference specified Marked path: ${State.markedPath}`);
+      return resolve(State.markedPath);
+    } else {
+      if (configPath !== null) {
+        // If the existing config value is invalid, reset it and notify the user
+        nova.config.remove(markedPathPref);
+        timedNotification(
+          nova.localize("Marked path is invalid"),
+          nova.localize("The Marked Path extension setting is invalid. Resetting to default."),
+          3000
+        );
       }
+    }
+
+    // Have we found the path previously?
+    State.markedPath = validateMarkedPath(State.markedPath)
+    if (State.markedPath !== null) {
+      console.info(`using previously discovered Marked path: ${State.markedPath}`)
+      return resolve(State.markedPath);
     }
 
     // No? Then scoop up anything with a marked bundle ID and then
     // sort through the results to pick a default.
-    applist("com.brettterpstra.marked*")
+    applist(markedBundleID)
       .then((paths) => {
         prlist = paths.map((path) => {
           return mdls(path, [
@@ -63,14 +115,14 @@ function resolveMarkedPath() {
           if (found.length === 0) {
             reject(
               nova.localize(
-                "Unable to find the Marked 2 application. Please set the Marked app you wish to use in the Extension Preferences."
+                "Unable to find the Marked application. Please set the Marked app you wish to use in the Extension Preferences."
               )
             );
           } else {
-            sorted = found.sort(bestMarked);
-            console.info(`Marked 2 discovery found: ${JSON.stringify(sorted)}`);
-            nova.config.set(markedPathPref, sorted[0].path);
-            resolve(sorted[0].path);
+            sorted = found.sort(bestMarked).reverse();
+            console.info(`Marked discovery found: ${JSON.stringify(sorted)}`);
+            State.markedPath = sorted[0].path
+            return resolve(State.markedPath);
           }
         });
       })
@@ -90,7 +142,7 @@ function bestMarked(a, b) {
 
   // Same version? Check bundle ID, Setapp wins.
   if (a.kMDItemCFBundleIdentifier !== b.kMDItemCFBundleIdentifier) {
-    if (a.kMDItemCFBundleIdentifier === "com.brettterpstra.marked-setapp") {
+    if (a.kMDItemCFBundleIdentifier === markedBundleIDSetapp) {
       return 1;
     }
     return -1;
@@ -230,4 +282,13 @@ function execErrorMessage(execReturn) {
     ? execReturn.stderr
     : execReturn.stdout
   ).join("\n");
+}
+
+// Show a self-canceling notification for a specified duration
+function timedNotification(title, body, timeout) {
+  let req = new NotificationRequest();
+  req.title = title;
+  req.body = body;
+  nova.notifications.add(req);
+  setTimeout(() => { nova.notifications.cancel(req.identifier)}, timeout);
 }

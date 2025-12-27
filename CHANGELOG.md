@@ -21,3 +21,9 @@ Icon update
 ## Version 1.1.1
 
 Fix a first-run bug where path to Marked is unset.
+
+## Version 1.2.0
+
+Support for Marked 3.
+
+Note: This version changes the behavior of the _Marked Path_ extension setting.  Previously if this was unset, the extension would look for the newest installed version of Marked and update the _Marked Path_ setting to that version. In this version, if _Marked Path_ is unset, the extension finds the newest installed version of Marked but leaves the _Marked Path_ setting unset. If you always want the newest installed version of Marked, clear the value of the _Marked Path_ setting.
